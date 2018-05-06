@@ -8,6 +8,7 @@
     <string name="light">Light sensor</string>
     <string name="proximity">Proximity</string>
     <string name="microphone">Microphone</string>
+    <string name="GPS">GPS</string>
 
     <string name="running">Running</string>
     <string name="paused">Paused</string>

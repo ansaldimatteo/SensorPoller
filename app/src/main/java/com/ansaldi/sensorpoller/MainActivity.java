@@ -2,9 +2,13 @@ package com.ansaldi.sensorpoller;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
+import android.location.LocationManager;
 import android.os.PowerManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -15,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ansaldi.sensorpoller.SensorListeners.AccelerometerListener;
+import com.ansaldi.sensorpoller.SensorListeners.GPSListener;
 import com.ansaldi.sensorpoller.SensorListeners.GyroListener;
 import com.ansaldi.sensorpoller.SensorListeners.LightListener;
 import com.ansaldi.sensorpoller.SensorListeners.MicrophoneListener;
@@ -28,12 +33,14 @@ import com.kishan.askpermission.PermissionInterface;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, PermissionCallback, ErrorCallback {
 
     private static final int REQUEST_PERMISSIONS = 20;
+    private static final int REQUEST_GPS = 30;
 
     private Switch switch_accelerometer;
     private Switch switch_gyro;
     private Switch switch_light;
     private Switch switch_proximity;
     private Switch switch_microphone;
+    private Switch switch_gps;
     private TextView txt_status;
     private Button btn_start;
     private Button btn_stop;
@@ -43,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Boolean check_light = false;
     private Boolean check_proximity = false;
     private Boolean check_microphone = false;
+    private Boolean check_gps = false;
 
     private SensorManager accelerometerSensorManager;
     private Sensor accelerometerSensor;
@@ -56,11 +64,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private SensorManager proximitySensorManager;
     private Sensor proximitySensor;
 
+    private LocationManager locationManager;
+
     private AccelerometerListener accelerometerListener;
     private GyroListener gyroListener;
     private LightListener lightListener;
     private ProximityListener proximityListener;
     private MicrophoneListener microphoneListener;
+    private GPSListener gpsListener;
 
     private PowerManager.WakeLock wakeLock;
 
@@ -75,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch_light = findViewById(R.id.switch_light);
         switch_proximity = findViewById(R.id.switch_proximity);
         switch_microphone = findViewById(R.id.switch_microphone);
+        switch_gps = findViewById(R.id.switch_gps);
         txt_status = findViewById(R.id.txt_status);
         btn_start = findViewById(R.id.btn_start);
         btn_stop = findViewById(R.id.btn_stop);
@@ -85,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         lightListener = new LightListener();
         proximityListener = new ProximityListener();
         microphoneListener = new MicrophoneListener();
+        gpsListener = new GPSListener();
 
 
         switch_accelerometer.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -122,28 +135,42 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+        switch_gps.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                check_gps = b;
+            }
+        });
+
         btn_start.setOnClickListener(this);
         btn_stop.setOnClickListener(this);
     }
 
+
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterListeners();
+        if (wakeLock.isHeld()) {
+            wakeLock.release();
+        }
     }
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()){
+        switch (view.getId()) {
             case R.id.btn_start:
                 new AskPermission.Builder(this)
-                        .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO)
+                        .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO)
                         .setCallback(this)
                         .setErrorCallback(this)
                         .request(REQUEST_PERMISSIONS);
                 break;
 
             case R.id.btn_stop:
-                wakeLock.release();
+                if (wakeLock.isHeld()) {
+                    wakeLock.release();
+                }
                 txt_status.setText(getString(R.string.paused));
                 unregisterListeners();
                 break;
@@ -153,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onPermissionsGranted(int requestCode) {
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"MyWakelockTag");
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyWakelockTag");
         wakeLock.acquire();
         txt_status.setText(getString(R.string.running));
         startAccelerometer();
@@ -161,49 +188,70 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startLight();
         startProximity();
         startMicrophone();
+        startGPS();
     }
 
     @Override
     public void onPermissionsDenied(int requestCode) {
-        Toast.makeText(this, getString(R.string.noPermissions),Toast.LENGTH_SHORT);
+        Toast.makeText(this, getString(R.string.noPermissions), Toast.LENGTH_SHORT);
     }
 
-    private void startAccelerometer(){
-        if(check_accelerometer) {
+    private void startAccelerometer() {
+        if (check_accelerometer) {
             accelerometerSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             accelerometerSensor = accelerometerSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
             accelerometerSensorManager.registerListener(accelerometerListener, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
 
-    private void startGyro(){
-        if(check_gyro){
+    private void startGyro() {
+        if (check_gyro) {
             gyroSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             gyroSensor = gyroSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             gyroSensorManager.registerListener(gyroListener, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
 
-    private void startLight(){
-        if(check_light){
+    private void startLight() {
+        if (check_light) {
             lightSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             lightSensor = lightSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
             lightSensorManager.registerListener(lightListener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
 
-    private void startProximity(){
-        if(check_proximity){
+    private void startProximity() {
+        if (check_proximity) {
             proximitySensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             proximitySensor = proximitySensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
             proximitySensorManager.registerListener(proximityListener, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
 
-    private void startMicrophone(){
-        if(check_microphone) {
+    private void startMicrophone() {
+        if (check_microphone) {
             microphoneListener.startRecording();
         }
+    }
+
+    private void startGPS() {
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (!locationManager.isProviderEnabled(locationManager.GPS_PROVIDER)) {
+            startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), REQUEST_GPS);
+        } else {
+            recordGPS();
+        }
+
+    }
+
+    private void recordGPS() {
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "GPS permissions not granted. Will not record GPS position.", Toast.LENGTH_SHORT);
+            return;
+        }
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, gpsListener);
     }
 
     private void unregisterListeners(){
@@ -221,6 +269,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         microphoneListener.stopRecording();
+
+        locationManager.removeUpdates(gpsListener);
     }
 
     @Override
@@ -231,6 +281,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onShowSettings(final PermissionInterface permissionInterface, int requestCode) {
         permissionInterface.onSettingsShown();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode){
+            case REQUEST_GPS:
+                if(locationManager.isProviderEnabled(locationManager.GPS_PROVIDER)){
+                    recordGPS();
+                }else{
+                    Toast.makeText(this, "GPS not on. Will not record GPS position.", Toast.LENGTH_SHORT);
+                    switch_gps.setChecked(false);
+                }
+                break;
+
+        }
     }
 
 }

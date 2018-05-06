@@ -92,4 +92,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/switch_proximity" />
 
+    <Switch
+        android:id="@+id/switch_gps"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/GPS"
+        app:layout_constraintEnd_toEndOf="@+id/switch_accelerometer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/switch_microphone" />
+
 </android.support.constraint.ConstraintLayout>
