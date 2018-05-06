@@ -29,7 +29,7 @@ public class ProximityListener implements SensorEventListener{
             } else {
                 writer = new CSVWriter(new FileWriter(filePath));
             }
-            String[] data = {proximity.toString()};
+            String[] data = {String.valueOf(System.currentTimeMillis()), proximity.toString()};
 
             writer.writeNext(data);
 

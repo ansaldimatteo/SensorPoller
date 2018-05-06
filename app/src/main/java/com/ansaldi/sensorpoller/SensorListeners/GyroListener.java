@@ -32,7 +32,7 @@ public class GyroListener implements SensorEventListener {
             } else {
                 writer = new CSVWriter(new FileWriter(filePath));
             }
-            String[] data = {xRotation.toString(), yRotation.toString(), zRotation.toString()};
+            String[] data = {String.valueOf(System.currentTimeMillis()), xRotation.toString(), yRotation.toString(), zRotation.toString()};
 
             writer.writeNext(data);
 

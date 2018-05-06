@@ -31,7 +31,7 @@ public class AccelerometerListener implements SensorEventListener {
             } else {
                 writer = new CSVWriter(new FileWriter(filePath));
             }
-            String[] data = {xAcceleration.toString(), yAcceleration.toString(), zAcceleration.toString()};
+            String[] data = {String.valueOf(System.currentTimeMillis()), xAcceleration.toString(), yAcceleration.toString(), zAcceleration.toString()};
 
             writer.writeNext(data);
 

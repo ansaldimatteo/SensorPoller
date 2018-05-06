@@ -29,7 +29,7 @@ public class LightListener implements SensorEventListener{
             } else {
                 writer = new CSVWriter(new FileWriter(filePath));
             }
-            String[] data = {light.toString()};
+            String[] data = {String.valueOf(System.currentTimeMillis()), light.toString()};
 
             writer.writeNext(data);
 

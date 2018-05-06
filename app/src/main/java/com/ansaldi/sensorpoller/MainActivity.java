@@ -2,10 +2,9 @@ package com.ansaldi.sensorpoller;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
-import android.support.v7.app.AlertDialog;
+import android.os.PowerManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -25,10 +24,6 @@ import com.kishan.askpermission.ErrorCallback;
 import com.kishan.askpermission.PermissionCallback;
 import com.kishan.askpermission.PermissionInterface;
 
-import org.w3c.dom.Text;
-
-import java.security.Permission;
-import java.security.Permissions;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, PermissionCallback, ErrorCallback {
 
@@ -66,6 +61,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private LightListener lightListener;
     private ProximityListener proximityListener;
     private MicrophoneListener microphoneListener;
+
+    private PowerManager.WakeLock wakeLock;
 
 
     @Override
@@ -132,7 +129,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onPause() {
         super.onPause();
-        unregisterListeners();
     }
 
     @Override
@@ -147,6 +143,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.btn_stop:
+                wakeLock.release();
                 txt_status.setText(getString(R.string.paused));
                 unregisterListeners();
                 break;
@@ -155,6 +152,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onPermissionsGranted(int requestCode) {
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"MyWakelockTag");
+        wakeLock.acquire();
         txt_status.setText(getString(R.string.running));
         startAccelerometer();
         startGyro();
