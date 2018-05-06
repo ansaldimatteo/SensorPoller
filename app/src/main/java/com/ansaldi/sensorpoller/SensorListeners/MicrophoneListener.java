@@ -6,9 +6,10 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+
+import au.com.bytecode.opencsv.CSVWriter;
 
 public class MicrophoneListener {
 
@@ -44,54 +45,55 @@ public class MicrophoneListener {
         recordingThread.start();
     }
 
-    //Conversion of short to byte
-    private byte[] short2byte(short[] sData) {
-        int shortArrsize = sData.length;
-        byte[] bytes = new byte[shortArrsize * 2];
 
-        for (int i = 0; i < shortArrsize; i++) {
-            bytes[i * 2] = (byte) (sData[i] & 0x00FF);
-            bytes[(i * 2) + 1] = (byte) (sData[i] >> 8);
-            sData[i] = 0;
+    private String[] short2String(short[] sData){
+        int shortArrsize = sData.length;
+        String[] stringArray = new String[shortArrsize];
+
+        for(int i = 0; i < shortArrsize; i++){
+            stringArray[i] = String.valueOf(sData[i]);
         }
-        return bytes;
+
+        return stringArray;
     }
 
     private void writeAudioDataToFile() {
         // Write the output audio in byte
         String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
-        String fileName = "8k16bitMono.pcm";
+        String fileName = "microphone_8k16bitMono.csv";
         String filePath = baseDir + File.separator + fileName;
 
         short sData[] = new short[BufferElements2Rec];
 
-        FileOutputStream os = null;
-        try {
-            os = new FileOutputStream(filePath);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        File f = new File(filePath );
+        CSVWriter writer;
 
         while (isRecording) {
             // gets the voice output from microphone to byte format
             recorder.read(sData, 0, BufferElements2Rec);
             System.out.println("Short writing to file" + sData.toString());
+            // File exist
             try {
-                // writes the data to file from buffer stores the voice buffer
-                byte bData[] = short2byte(sData);
+                if (f.exists() && !f.isDirectory()) {
+                    FileWriter mFileWriter = new FileWriter(filePath, true);
+                    writer = new CSVWriter(mFileWriter);
+                } else {
+                    writer = new CSVWriter(new FileWriter(filePath));
+                }
 
-                os.write(bData, 0, BufferElements2Rec * BytesPerElement);
+                String[] data = short2String(sData);
+                for(int i = 0; i < sData.length; i++) {
+                    writer.writeNext(new String[]{data[i]});
+                }
 
-            } catch (IOException e) {
-                e.printStackTrace();
+                writer.close();
+            }catch (IOException e){
+                System.out.println("Error writing");
             }
+
         }
 
-        try {
-            os.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
     }
 
     public void stopRecording() {
