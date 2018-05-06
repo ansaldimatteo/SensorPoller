@@ -1,9 +1,11 @@
 package com.ansaldi.sensorpoller;
 
+import android.Manifest;
 import android.content.Context;
-import android.graphics.Color;
+import android.content.DialogInterface;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -11,18 +13,30 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.ansaldi.sensorpoller.SensorListeners.AccelerometerListener;
 import com.ansaldi.sensorpoller.SensorListeners.GyroListener;
 import com.ansaldi.sensorpoller.SensorListeners.LightListener;
+import com.ansaldi.sensorpoller.SensorListeners.ProximityListener;
+import com.kishan.askpermission.AskPermission;
+import com.kishan.askpermission.ErrorCallback;
+import com.kishan.askpermission.PermissionCallback;
+import com.kishan.askpermission.PermissionInterface;
 
 import org.w3c.dom.Text;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+import java.security.Permission;
+import java.security.Permissions;
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, PermissionCallback, ErrorCallback {
+
+    private static final int REQUEST_PERMISSIONS = 20;
 
     private Switch switch_accelerometer;
     private Switch switch_gyro;
     private Switch switch_light;
+    private Switch switch_proximity;
     private TextView txt_status;
     private Button btn_start;
     private Button btn_stop;
@@ -30,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Boolean check_accelerometer = false;
     private Boolean check_gyro = false;
     private Boolean check_light = false;
+    private Boolean check_proximity = false;
 
     private SensorManager accelerometerSensorManager;
     private Sensor accelerometerSensor;
@@ -40,9 +55,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private SensorManager lightSensorManager;
     private Sensor lightSensor;
 
+    private SensorManager proximitySensorManager;
+    private Sensor proximitySensor;
+
     private AccelerometerListener accelerometerListener;
     private GyroListener gyroListener;
     private LightListener lightListener;
+    private ProximityListener proximityListener;
 
 
     @Override
@@ -53,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch_accelerometer = findViewById(R.id.switch_accelerometer);
         switch_gyro = findViewById(R.id.switch_gyro);
         switch_light = findViewById(R.id.switch_light);
+        switch_proximity =  findViewById(R.id.switch_proximity);
         txt_status = findViewById(R.id.txt_status);
         btn_start = findViewById(R.id.btn_start);
         btn_stop = findViewById(R.id.btn_stop);
@@ -61,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         accelerometerListener = new AccelerometerListener();
         gyroListener = new GyroListener();
         lightListener = new LightListener();
+        proximityListener = new ProximityListener();
 
 
         switch_accelerometer.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -84,6 +105,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+        switch_proximity.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                check_proximity = b;
+            }
+        });
+
         btn_start.setOnClickListener(this);
         btn_stop.setOnClickListener(this);
     }
@@ -91,42 +119,40 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onPause() {
         super.onPause();
-        if(accelerometerSensorManager != null) {
-            accelerometerSensorManager.unregisterListener(accelerometerListener);
-        }
-        if(gyroSensorManager != null){
-            gyroSensorManager.unregisterListener(gyroListener);
-        }
-        if(lightSensorManager != null){
-            lightSensorManager.unregisterListener(lightListener);
-        }
+        unregisterListeners();
     }
 
     @Override
     public void onClick(View view) {
         switch (view.getId()){
             case R.id.btn_start:
-                txt_status.setText(getString(R.string.running));
-                startAccelerometer();
-                startGyro();
-                startLight();
+                new AskPermission.Builder(this)
+                        .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        .setCallback(this)
+                        .setErrorCallback(this)
+                        .request(REQUEST_PERMISSIONS);
                 break;
 
             case R.id.btn_stop:
                 txt_status.setText(getString(R.string.paused));
-                if(accelerometerSensorManager != null) {
-                    accelerometerSensorManager.unregisterListener(accelerometerListener);
-                }
-                if(gyroSensorManager != null){
-                    gyroSensorManager.unregisterListener(gyroListener);
-                }
-                if(lightSensorManager != null){
-                    lightSensorManager.unregisterListener(lightListener);
-                }
+                unregisterListeners();
                 break;
         }
     }
 
+    @Override
+    public void onPermissionsGranted(int requestCode) {
+        txt_status.setText(getString(R.string.running));
+        startAccelerometer();
+        startGyro();
+        startLight();
+        startProximity();
+    }
+
+    @Override
+    public void onPermissionsDenied(int requestCode) {
+        Toast.makeText(this, getString(R.string.noPermissions),Toast.LENGTH_SHORT);
+    }
 
     private void startAccelerometer(){
         if(check_accelerometer) {
@@ -150,6 +176,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             lightSensor = lightSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
             lightSensorManager.registerListener(lightListener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
+    }
+
+    private void startProximity(){
+        if(check_proximity){
+            proximitySensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+            proximitySensor = proximitySensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+            proximitySensorManager.registerListener(proximityListener, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+    }
+
+    private void unregisterListeners(){
+        if(accelerometerSensorManager != null) {
+            accelerometerSensorManager.unregisterListener(accelerometerListener);
+        }
+        if(gyroSensorManager != null){
+            gyroSensorManager.unregisterListener(gyroListener);
+        }
+        if(lightSensorManager != null){
+            lightSensorManager.unregisterListener(lightListener);
+        }
+        if(proximitySensorManager != null){
+            proximitySensorManager.unregisterListener(proximityListener);
+        }
+    }
+
+    @Override
+    public void onShowRationalDialog(final PermissionInterface permissionInterface, int requestCode) {
+        permissionInterface.onDialogShown();
+    }
+
+    @Override
+    public void onShowSettings(final PermissionInterface permissionInterface, int requestCode) {
+        permissionInterface.onSettingsShown();
     }
 
 }
