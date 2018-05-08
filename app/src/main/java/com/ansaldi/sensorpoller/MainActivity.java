@@ -1,12 +1,16 @@
 package com.ansaldi.sensorpoller;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.LocationManager;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -29,11 +33,14 @@ import com.kishan.askpermission.ErrorCallback;
 import com.kishan.askpermission.PermissionCallback;
 import com.kishan.askpermission.PermissionInterface;
 
+import java.util.List;
+
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, PermissionCallback, ErrorCallback {
 
     private static final int REQUEST_PERMISSIONS = 20;
     private static final int REQUEST_GPS = 30;
+    private static final int REQUEST_NETWORK_FOR_WIFI = 40;
 
     private Switch switch_accelerometer;
     private Switch switch_gyro;
@@ -41,16 +48,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Switch switch_proximity;
     private Switch switch_microphone;
     private Switch switch_gps;
+    private Switch switch_wifi;
     private TextView txt_status;
     private Button btn_start;
     private Button btn_stop;
 
+    private Boolean running = false;
     private Boolean check_accelerometer = false;
     private Boolean check_gyro = false;
     private Boolean check_light = false;
     private Boolean check_proximity = false;
     private Boolean check_microphone = false;
     private Boolean check_gps = false;
+    private Boolean check_wifi = false;
 
     private SensorManager accelerometerSensorManager;
     private Sensor accelerometerSensor;
@@ -65,6 +75,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Sensor proximitySensor;
 
     private LocationManager locationManager;
+
+    private WifiManager mWifiManager;
 
     private AccelerometerListener accelerometerListener;
     private GyroListener gyroListener;
@@ -87,6 +99,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch_proximity = findViewById(R.id.switch_proximity);
         switch_microphone = findViewById(R.id.switch_microphone);
         switch_gps = findViewById(R.id.switch_gps);
+        switch_wifi = findViewById(R.id.switch_wifi);
+
         txt_status = findViewById(R.id.txt_status);
         btn_start = findViewById(R.id.btn_start);
         btn_stop = findViewById(R.id.btn_stop);
@@ -142,6 +156,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+        switch_wifi.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                check_wifi = b;
+            }
+        });
+
         btn_start.setOnClickListener(this);
         btn_stop.setOnClickListener(this);
     }
@@ -151,8 +172,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onDestroy() {
         super.onDestroy();
         unregisterListeners();
-        if (wakeLock.isHeld()) {
-            wakeLock.release();
+        if(wakeLock != null) {
+            if (wakeLock.isHeld()) {
+                wakeLock.release();
+            }
         }
     }
 
@@ -160,14 +183,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn_start:
-                new AskPermission.Builder(this)
-                        .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO)
-                        .setCallback(this)
-                        .setErrorCallback(this)
-                        .request(REQUEST_PERMISSIONS);
+                if(!running) {
+                    new AskPermission.Builder(this)
+                            .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO)
+                            .setCallback(this)
+                            .setErrorCallback(this)
+                            .request(REQUEST_PERMISSIONS);
+                }
                 break;
 
             case R.id.btn_stop:
+                running = false;
                 if (wakeLock.isHeld()) {
                     wakeLock.release();
                 }
@@ -179,6 +205,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onPermissionsGranted(int requestCode) {
+        running = true;
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyWakelockTag");
         wakeLock.acquire();
@@ -189,6 +216,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startProximity();
         startMicrophone();
         startGPS();
+        startWifi();
     }
 
     @Override
@@ -235,11 +263,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void startGPS() {
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (!locationManager.isProviderEnabled(locationManager.GPS_PROVIDER)) {
-            startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), REQUEST_GPS);
-        } else {
-            recordGPS();
+        if(check_gps) {
+            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            if (!locationManager.isProviderEnabled(locationManager.GPS_PROVIDER) && !locationManager.isProviderEnabled(locationManager.NETWORK_PROVIDER)) {
+                startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), REQUEST_GPS);
+            } else {
+                recordGPS();
+            }
         }
 
     }
@@ -252,6 +282,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return;
         }
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, gpsListener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, gpsListener);
+    }
+
+    private void startWifi(){
+        if(check_wifi) {
+            //check if network location is on
+            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            if (!locationManager.isProviderEnabled(locationManager.NETWORK_PROVIDER)) {
+                startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), REQUEST_NETWORK_FOR_WIFI);
+            } else {
+                recordGPS();
+            }
+        }
+    }
+
+    private void recordWifi(){
+        mWifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        registerReceiver(mWifiScanReceiver,
+                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        mWifiManager.startScan();
     }
 
     private void unregisterListeners(){
@@ -270,7 +320,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         microphoneListener.stopRecording();
 
-        locationManager.removeUpdates(gpsListener);
+        if(locationManager != null) {
+            locationManager.removeUpdates(gpsListener);
+        }
     }
 
     @Override
@@ -287,7 +339,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode){
             case REQUEST_GPS:
-                if(locationManager.isProviderEnabled(locationManager.GPS_PROVIDER)){
+                if(locationManager.isProviderEnabled(locationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(locationManager.NETWORK_PROVIDER)){
                     recordGPS();
                 }else{
                     Toast.makeText(this, "GPS not on. Will not record GPS position.", Toast.LENGTH_SHORT);
@@ -295,7 +347,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 break;
 
+            case REQUEST_NETWORK_FOR_WIFI:
+                if(locationManager.isProviderEnabled(locationManager.NETWORK_PROVIDER)){
+                    recordWifi();
+                }else{
+                    Toast.makeText(this, "Network location not on. Will not record WiFi data.", Toast.LENGTH_SHORT);
+                    switch_gps.setChecked(false);
+                }
+                break;
+
         }
     }
+
+    private final BroadcastReceiver mWifiScanReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent intent) {
+            if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
+                List<ScanResult> mScanResults = mWifiManager.getScanResults();
+                //TODO: write data into csv
+                System.out.println(mScanResults.size());
+            }
+        }
+    };
 
 }

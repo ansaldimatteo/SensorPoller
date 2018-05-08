@@ -83,7 +83,7 @@ public class MicrophoneListener {
 
                 String[] data = short2String(sData);
                 for(int i = 0; i < sData.length; i++) {
-                    writer.writeNext(new String[]{data[i]});
+                    writer.writeNext(new String[]{String.valueOf(System.currentTimeMillis()), data[i]});
                 }
 
                 writer.close();
