@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
+import android.location.Location;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -36,9 +37,14 @@ import com.kishan.askpermission.PermissionInterface;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import au.com.bytecode.opencsv.CSVWriter;
+import io.nlopez.smartlocation.OnLocationUpdatedListener;
+import io.nlopez.smartlocation.SmartLocation;
+import io.nlopez.smartlocation.location.config.LocationParams;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, PermissionCallback, ErrorCallback {
@@ -272,7 +278,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void startGPS() {
         if(check_gps) {
             locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            if (!locationManager.isProviderEnabled(locationManager.GPS_PROVIDER) && !locationManager.isProviderEnabled(locationManager.NETWORK_PROVIDER)) {
+            if (!locationManager.isProviderEnabled(locationManager.GPS_PROVIDER)) {
                 startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), REQUEST_GPS);
             } else {
                 recordGPS();
@@ -282,14 +288,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void recordGPS() {
-        if (ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "GPS permissions not granted. Will not record GPS position.", Toast.LENGTH_SHORT);
-            return;
-        }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, gpsListener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 10, gpsListener);
+        SmartLocation.with(this).location()
+                .config(LocationParams.NAVIGATION)
+                .start(new OnLocationUpdatedListener() {
+                    @Override
+                    public void onLocationUpdated(Location location) {
+                        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+                        String fileName = "GPS.csv";
+                        String filePath = baseDir + File.separator + fileName;
+                        File f = new File(filePath );
+                        CSVWriter writer;
+                        // File exist
+                        try {
+                            if (f.exists() && !f.isDirectory()) {
+                                FileWriter mFileWriter = new FileWriter(filePath, true);
+                                writer = new CSVWriter(mFileWriter);
+                            } else {
+                                writer = new CSVWriter(new FileWriter(filePath));
+                            }
+                            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
+
+                            Date resultdate = new Date(System.currentTimeMillis());
+                            System.out.println(sdf.format(resultdate));
+
+                            String[] data = {resultdate.toString(), String.valueOf(System.currentTimeMillis()), String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())};
+
+                            writer.writeNext(data);
+
+                            writer.close();
+                        }catch (IOException e){
+                            System.out.println("Error writing");
+                        }
+                    }
+                });
     }
 
     private void startWifi(){
@@ -331,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         microphoneListener.stopRecording();
 
         if(locationManager != null) {
-            locationManager.removeUpdates(gpsListener);
+            SmartLocation.with(this).location().stop();
         }
 
         if(mWifiManager != null) {
@@ -406,8 +437,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         } else {
                             writer = new CSVWriter(new FileWriter(filePath));
                         }
+                        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
 
-                        String[] data = {String.valueOf(System.currentTimeMillis()), avg.toString(), max.toString()};
+                        Date resultdate = new Date(System.currentTimeMillis());
+                        System.out.println(sdf.format(resultdate));
+
+                        String[] data = {resultdate.toString(), String.valueOf(System.currentTimeMillis()), avg.toString(), max.toString()};
 
                         writer.writeNext(data);
 

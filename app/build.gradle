@@ -29,4 +29,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     compile group: 'net.sf.opencsv', name: 'opencsv', version: '2.3'
     compile 'com.kishan.askpermission:askpermission:1.0.3'
+    compile 'io.nlopez.smartlocation:library:3.3.3'
 }

@@ -7,6 +7,8 @@ import android.hardware.SensorEventListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import au.com.bytecode.opencsv.CSVWriter;
 
@@ -31,7 +33,11 @@ public class AccelerometerListener implements SensorEventListener {
             } else {
                 writer = new CSVWriter(new FileWriter(filePath));
             }
-            String[] data = {String.valueOf(System.currentTimeMillis()), xAcceleration.toString(), yAcceleration.toString(), zAcceleration.toString()};
+            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
+
+            Date resultdate = new Date(System.currentTimeMillis());
+            System.out.println(sdf.format(resultdate));
+            String[] data = {resultdate.toString(), String.valueOf(System.currentTimeMillis()), xAcceleration.toString(), yAcceleration.toString(), zAcceleration.toString()};
 
             writer.writeNext(data);
 

@@ -8,6 +8,8 @@ import android.os.Bundle;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import au.com.bytecode.opencsv.CSVWriter;
 
@@ -29,8 +31,12 @@ public class GPSListener implements LocationListener{
             } else {
                 writer = new CSVWriter(new FileWriter(filePath));
             }
+            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
 
-            String[] data = {String.valueOf(System.currentTimeMillis()), String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())};
+            Date resultdate = new Date(System.currentTimeMillis());
+            System.out.println(sdf.format(resultdate));
+
+            String[] data = {resultdate.toString(), String.valueOf(System.currentTimeMillis()), String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())};
 
             writer.writeNext(data);
 
