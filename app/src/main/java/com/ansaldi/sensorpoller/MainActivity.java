@@ -33,7 +33,12 @@ import com.kishan.askpermission.ErrorCallback;
 import com.kishan.askpermission.PermissionCallback;
 import com.kishan.askpermission.PermissionInterface;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
+
+import au.com.bytecode.opencsv.CSVWriter;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, PermissionCallback, ErrorCallback {
@@ -194,8 +199,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.btn_stop:
                 running = false;
-                if (wakeLock.isHeld()) {
-                    wakeLock.release();
+                if(wakeLock != null) {
+                    if (wakeLock.isHeld()) {
+                        wakeLock.release();
+                    }
                 }
                 txt_status.setText(getString(R.string.paused));
                 unregisterListeners();
@@ -292,13 +299,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (!locationManager.isProviderEnabled(locationManager.NETWORK_PROVIDER)) {
                 startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), REQUEST_NETWORK_FOR_WIFI);
             } else {
-                recordGPS();
+                recordWifi();
             }
         }
     }
 
     private void recordWifi(){
         mWifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if(!mWifiManager.isWifiEnabled()) {
+            mWifiManager.setWifiEnabled(true);
+        }
         registerReceiver(mWifiScanReceiver,
                 new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         mWifiManager.startScan();
@@ -323,6 +333,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(locationManager != null) {
             locationManager.removeUpdates(gpsListener);
         }
+
+        if(mWifiManager != null) {
+            unregisterReceiver(mWifiScanReceiver);
+        }
+
     }
 
     @Override
@@ -352,7 +367,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     recordWifi();
                 }else{
                     Toast.makeText(this, "Network location not on. Will not record WiFi data.", Toast.LENGTH_SHORT);
-                    switch_gps.setChecked(false);
+                    switch_wifi.setChecked(false);
                 }
                 break;
 
@@ -363,9 +378,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onReceive(Context c, Intent intent) {
             if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
+                Integer max;
+                Integer avg = 0;
                 List<ScanResult> mScanResults = mWifiManager.getScanResults();
-                //TODO: write data into csv
-                System.out.println(mScanResults.size());
+
+                max = mScanResults.get(0).level;
+                if(mScanResults.size() > 0) {
+                    for (ScanResult scanResult : mScanResults) {
+                        avg += scanResult.level;
+                        if(scanResult.level > max){
+                            max = scanResult.level;
+                        }
+                    }
+
+                    avg = avg / mScanResults.size();
+
+                    String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+                    String fileName = "WiFi.csv";
+                    String filePath = baseDir + File.separator + fileName;
+                    File f = new File(filePath );
+                    CSVWriter writer;
+                    // File exist
+                    try {
+                        if (f.exists() && !f.isDirectory()) {
+                            FileWriter mFileWriter = new FileWriter(filePath, true);
+                            writer = new CSVWriter(mFileWriter);
+                        } else {
+                            writer = new CSVWriter(new FileWriter(filePath));
+                        }
+
+                        String[] data = {String.valueOf(System.currentTimeMillis()), avg.toString(), max.toString()};
+
+                        writer.writeNext(data);
+
+                        writer.close();
+                    }catch (IOException e){
+                        System.out.println("Error writing");
+                    }
+                }
             }
         }
     };

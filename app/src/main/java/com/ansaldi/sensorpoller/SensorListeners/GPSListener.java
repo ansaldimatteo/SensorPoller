@@ -29,6 +29,7 @@ public class GPSListener implements LocationListener{
             } else {
                 writer = new CSVWriter(new FileWriter(filePath));
             }
+
             String[] data = {String.valueOf(System.currentTimeMillis()), String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())};
 
             writer.writeNext(data);
