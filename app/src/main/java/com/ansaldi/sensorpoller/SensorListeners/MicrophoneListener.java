@@ -85,11 +85,8 @@ public class MicrophoneListener {
 
                 String[] data = short2String(sData);
                 for(int i = 0; i < sData.length; i++) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
 
-                    Date resultdate = new Date(System.currentTimeMillis());
-                    System.out.println(sdf.format(resultdate));
-                    writer.writeNext(new String[]{resultdate.toString(), String.valueOf(System.currentTimeMillis()), data[i]});
+                    writer.writeNext(new String[]{String.valueOf(System.currentTimeMillis()), data[i]});
                 }
 
                 writer.close();

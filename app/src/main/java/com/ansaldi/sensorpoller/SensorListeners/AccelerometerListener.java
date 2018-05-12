@@ -33,11 +33,8 @@ public class AccelerometerListener implements SensorEventListener {
             } else {
                 writer = new CSVWriter(new FileWriter(filePath));
             }
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
 
-            Date resultdate = new Date(System.currentTimeMillis());
-            System.out.println(sdf.format(resultdate));
-            String[] data = {resultdate.toString(), String.valueOf(System.currentTimeMillis()), xAcceleration.toString(), yAcceleration.toString(), zAcceleration.toString()};
+            String[] data = {String.valueOf(System.currentTimeMillis()), xAcceleration.toString(), yAcceleration.toString(), zAcceleration.toString()};
 
             writer.writeNext(data);
 

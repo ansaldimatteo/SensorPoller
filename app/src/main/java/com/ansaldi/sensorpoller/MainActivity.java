@@ -8,6 +8,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.media.MediaScannerConnection;
 import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 import android.support.v7.app.AppCompatActivity;
@@ -91,7 +92,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private LightListener lightListener;
     private ProximityListener proximityListener;
     private MicrophoneListener microphoneListener;
-    private GPSListener gpsListener;
     private ContinuousReceiver mWifiScanReceiver;
 
     private PowerManager.WakeLock wakeLock;
@@ -120,8 +120,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         lightListener = new LightListener();
         proximityListener = new ProximityListener();
         microphoneListener = new MicrophoneListener();
-        gpsListener = new GPSListener();
-        mWifiScanReceiver = new ContinuousReceiver(this, new WifiListener());
+        mWifiScanReceiver = new ContinuousReceiver(this, new WifiListener(), 5000);
 
 
         switch_accelerometer.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -211,8 +210,50 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 txt_status.setText(getString(R.string.paused));
                 unregisterListeners();
+                makeFilesVisible();
                 break;
         }
+    }
+
+    //This allows MTP to show the file when the phone is connected to a pc
+    private void makeFilesVisible() {
+        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+        String fileName = "LinearAccelerometer.csv";
+        String filePath = baseDir + File.separator + fileName;
+        File f = new File(filePath );
+        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+
+        fileName = "Gyroscope.csv";
+        filePath = baseDir + File.separator + fileName;
+        f = new File(filePath );
+        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+
+        fileName = "Light.csv";
+        filePath = baseDir + File.separator + fileName;
+        f = new File(filePath );
+        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+
+        fileName = "Proximity.csv";
+        filePath = baseDir + File.separator + fileName;
+        f = new File(filePath );
+        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+
+        fileName = "microphone_8k16bitMono.csv";
+        filePath = baseDir + File.separator + fileName;
+        f = new File(filePath );
+        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+
+        fileName = "GPS.csv";
+        filePath = baseDir + File.separator + fileName;
+        f = new File(filePath );
+        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+
+
+        fileName = "WiFi.csv";
+        filePath = baseDir + File.separator + fileName;
+        f = new File(filePath );
+        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+
     }
 
     @Override
@@ -305,12 +346,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             } else {
                                 writer = new CSVWriter(new FileWriter(filePath));
                             }
-                            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
 
-                            Date resultdate = new Date(System.currentTimeMillis());
-                            System.out.println(sdf.format(resultdate));
-
-                            String[] data = {resultdate.toString(), String.valueOf(System.currentTimeMillis()), String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())};
+                            String[] data = {String.valueOf(System.currentTimeMillis()), String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())};
 
                             writer.writeNext(data);
 
