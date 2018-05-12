@@ -4,16 +4,12 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationManager;
-import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.PowerManager;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -24,11 +20,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ansaldi.sensorpoller.SensorListeners.AccelerometerListener;
+import com.ansaldi.sensorpoller.SensorListeners.ContinuousReceiver;
 import com.ansaldi.sensorpoller.SensorListeners.GPSListener;
 import com.ansaldi.sensorpoller.SensorListeners.GyroListener;
 import com.ansaldi.sensorpoller.SensorListeners.LightListener;
 import com.ansaldi.sensorpoller.SensorListeners.MicrophoneListener;
 import com.ansaldi.sensorpoller.SensorListeners.ProximityListener;
+import com.ansaldi.sensorpoller.SensorListeners.WifiListener;
 import com.kishan.askpermission.AskPermission;
 import com.kishan.askpermission.ErrorCallback;
 import com.kishan.askpermission.PermissionCallback;
@@ -39,7 +37,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 import au.com.bytecode.opencsv.CSVWriter;
 import io.nlopez.smartlocation.OnLocationUpdatedListener;
@@ -95,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ProximityListener proximityListener;
     private MicrophoneListener microphoneListener;
     private GPSListener gpsListener;
+    private ContinuousReceiver mWifiScanReceiver;
 
     private PowerManager.WakeLock wakeLock;
 
@@ -123,6 +121,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         proximityListener = new ProximityListener();
         microphoneListener = new MicrophoneListener();
         gpsListener = new GPSListener();
+        mWifiScanReceiver = new ContinuousReceiver(this, new WifiListener());
 
 
         switch_accelerometer.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -340,9 +339,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(!mWifiManager.isWifiEnabled()) {
             mWifiManager.setWifiEnabled(true);
         }
-        registerReceiver(mWifiScanReceiver,
-                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-        mWifiManager.startScan();
+
+        mWifiScanReceiver.startScanning(true);
     }
 
     private void unregisterListeners(){
@@ -366,7 +364,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         if(mWifiManager != null) {
-            unregisterReceiver(mWifiScanReceiver);
+            mWifiScanReceiver.stopScanning();
         }
 
     }
@@ -405,54 +403,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private final BroadcastReceiver mWifiScanReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context c, Intent intent) {
-            if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
-                Integer max;
-                Integer avg = 0;
-                List<ScanResult> mScanResults = mWifiManager.getScanResults();
 
-                max = mScanResults.get(0).level;
-                if(mScanResults.size() > 0) {
-                    for (ScanResult scanResult : mScanResults) {
-                        avg += scanResult.level;
-                        if(scanResult.level > max){
-                            max = scanResult.level;
-                        }
-                    }
 
-                    avg = avg / mScanResults.size();
-
-                    String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
-                    String fileName = "WiFi.csv";
-                    String filePath = baseDir + File.separator + fileName;
-                    File f = new File(filePath );
-                    CSVWriter writer;
-                    // File exist
-                    try {
-                        if (f.exists() && !f.isDirectory()) {
-                            FileWriter mFileWriter = new FileWriter(filePath, true);
-                            writer = new CSVWriter(mFileWriter);
-                        } else {
-                            writer = new CSVWriter(new FileWriter(filePath));
-                        }
-                        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd,yyyy HH:mm");
-
-                        Date resultdate = new Date(System.currentTimeMillis());
-                        System.out.println(sdf.format(resultdate));
-
-                        String[] data = {resultdate.toString(), String.valueOf(System.currentTimeMillis()), avg.toString(), max.toString()};
-
-                        writer.writeNext(data);
-
-                        writer.close();
-                    }catch (IOException e){
-                        System.out.println("Error writing");
-                    }
-                }
-            }
-        }
-    };
 
 }
