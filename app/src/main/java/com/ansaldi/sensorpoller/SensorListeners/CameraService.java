@@ -91,6 +91,7 @@ public class CameraService extends Service {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
             File pictureFile = Util.getOutputMediaFile(Util.MEDIA_TYPE_IMAGE);
+            Integer numFaces = 0;
 
             if (pictureFile == null) {
                 return;
@@ -101,20 +102,47 @@ public class CameraService extends Service {
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
             Bitmap image = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
-            Matrix matrix = new Matrix();
-            matrix.postRotate(270);
-            Bitmap rotatedBitmap = Bitmap.createBitmap(image, 0, 0, image.getWidth(), image.getHeight(), matrix, true);
-
             FaceDetector detector = new FaceDetector.Builder(context)
-                    .setTrackingEnabled(true)
-                    .setLandmarkType(FaceDetector.ALL_LANDMARKS)
+                    .setTrackingEnabled(false)
+                    .setLandmarkType(FaceDetector.NO_LANDMARKS)
+                    .setClassificationType(FaceDetector.FAST_MODE)
+                    .setProminentFaceOnly(true)
                     .build();
 
-            Frame frame = new Frame.Builder().setBitmap(rotatedBitmap).build();
+            //analyse the image 3 times, rotated by 90 degrees each time. FaceDetector doesn't recognise faces that are rotated beyond a certain point,
+            //so I have to rotate the image manually. This way if someone is using the phone in landscape mode, I sill recognise that there is a face.
 
+            //image is on one side (landscape)
+            Frame frame = new Frame.Builder().setBitmap(image).build();
             SparseArray<Face> faces = detector.detect(frame);
+            numFaces += faces.size();
 
-            writeToCSV(faces.size());
+            Matrix matrix = new Matrix();
+            matrix.postRotate(180);
+            Bitmap landscapeBitmap = Bitmap.createBitmap(image, 0, 0, image.getWidth(), image.getHeight(), matrix, true);
+
+            //image is on one side (landscape)
+            frame = new Frame.Builder().setBitmap(landscapeBitmap).build();
+            faces = detector.detect(frame);
+            numFaces += faces.size();
+
+            matrix = new Matrix();
+            matrix.postRotate(270);
+            Bitmap portraitBitmap = Bitmap.createBitmap(image, 0, 0, image.getWidth(), image.getHeight(), matrix, true);
+
+            //image is in portrait mode
+            Frame frame2 = new Frame.Builder().setBitmap(portraitBitmap).build();
+            faces = detector.detect(frame2);
+            numFaces += faces.size();
+
+            //do this check because I analyse the image rotated 3 times. If a face is diagonal, it's possible that it is counted twice.
+            if(numFaces > 0) {
+                writeToCSV(1);
+            }else{
+                writeToCSV(0);
+            }
+
+            detector.release();
 
             if(continueTakingPhotos){
                 timestamp = System.currentTimeMillis();
