@@ -1,16 +1,10 @@
 package com.ansaldi.sensorpoller.SensorListeners;
 
-import android.content.Context;
-import android.media.MediaScannerConnection;
 import android.net.wifi.ScanResult;
-
-import com.ansaldi.sensorpoller.SensorListeners.ContinuousReceiver;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 import au.com.bytecode.opencsv.CSVWriter;

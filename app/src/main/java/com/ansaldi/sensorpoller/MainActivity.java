@@ -1,18 +1,20 @@
 package com.ansaldi.sensorpoller;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaScannerConnection;
 import android.net.wifi.WifiManager;
-import android.os.PowerManager;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.PowerManager;
+import android.os.ResultReceiver;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -21,8 +23,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ansaldi.sensorpoller.SensorListeners.AccelerometerListener;
+import com.ansaldi.sensorpoller.SensorListeners.CameraService;
 import com.ansaldi.sensorpoller.SensorListeners.ContinuousReceiver;
-import com.ansaldi.sensorpoller.SensorListeners.GPSListener;
 import com.ansaldi.sensorpoller.SensorListeners.GyroListener;
 import com.ansaldi.sensorpoller.SensorListeners.LightListener;
 import com.ansaldi.sensorpoller.SensorListeners.MicrophoneListener;
@@ -36,8 +38,6 @@ import com.kishan.askpermission.PermissionInterface;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import au.com.bytecode.opencsv.CSVWriter;
 import io.nlopez.smartlocation.OnLocationUpdatedListener;
@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Switch switch_microphone;
     private Switch switch_gps;
     private Switch switch_wifi;
+    private Switch switch_camera;
     private TextView txt_status;
     private Button btn_start;
     private Button btn_stop;
@@ -70,6 +71,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Boolean check_microphone = false;
     private Boolean check_gps = false;
     private Boolean check_wifi = false;
+    private Boolean check_camera = false;
+    private boolean mHandlingEvent = false;
+    private boolean mRecording;
 
     private SensorManager accelerometerSensorManager;
     private Sensor accelerometerSensor;
@@ -102,6 +106,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         switch_accelerometer = findViewById(R.id.switch_accelerometer);
         switch_gyro = findViewById(R.id.switch_gyro);
         switch_light = findViewById(R.id.switch_light);
@@ -109,6 +114,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch_microphone = findViewById(R.id.switch_microphone);
         switch_gps = findViewById(R.id.switch_gps);
         switch_wifi = findViewById(R.id.switch_wifi);
+        switch_camera = findViewById(R.id.switch_camera);
 
         txt_status = findViewById(R.id.txt_status);
         btn_start = findViewById(R.id.btn_start);
@@ -121,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         proximityListener = new ProximityListener();
         microphoneListener = new MicrophoneListener();
         mWifiScanReceiver = new ContinuousReceiver(this, new WifiListener(), 5000);
+
 
 
         switch_accelerometer.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -172,6 +179,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+        switch_camera.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                check_camera = b;
+            }
+        });
+
         btn_start.setOnClickListener(this);
         btn_stop.setOnClickListener(this);
     }
@@ -194,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn_start:
                 if(!running) {
                     new AskPermission.Builder(this)
-                            .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO)
+                            .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA)
                             .setCallback(this)
                             .setErrorCallback(this)
                             .request(REQUEST_PERMISSIONS);
@@ -270,6 +284,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startMicrophone();
         startGPS();
         startWifi();
+        startCamera();
     }
 
     @Override
@@ -327,6 +342,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+    private void startCamera(){
+        if(check_camera){
+            startRecording();
+        }
+    }
+
     private void recordGPS() {
         SmartLocation.with(this).location()
                 .config(LocationParams.NAVIGATION)
@@ -380,6 +401,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mWifiScanReceiver.startScanning(true);
     }
 
+
     private void unregisterListeners(){
         if(accelerometerSensorManager != null) {
             accelerometerSensorManager.unregisterListener(accelerometerListener);
@@ -402,6 +424,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if(mWifiManager != null) {
             mWifiScanReceiver.stopScanning();
+        }
+
+        if(mRecording) {
+            stopRecording();
         }
 
     }
@@ -440,7 +466,66 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    private void startRecording() {
+        if (!mHandlingEvent) {
+            mHandlingEvent = true;
+            ResultReceiver receiver = new ResultReceiver(new Handler()) {
+                @Override
+                protected void onReceiveResult(int resultCode, Bundle resultData) {
+                    setRecording(true);
+                    handleStartRecordingResult(resultCode, resultData);
+                    mHandlingEvent = false;
+                }
+            };
 
+            CameraService.startToStartRecording(this,
+                    Camera.CameraInfo.CAMERA_FACING_FRONT,
+                    receiver);
+        }
+    }
 
+    private void stopRecording() {
+        if (!mHandlingEvent) {
+            mHandlingEvent = true;
+            ResultReceiver receiver = new ResultReceiver(new Handler()) {
+                @Override
+                protected void onReceiveResult(int resultCode, Bundle resultData) {
+                    setRecording(false);
+                    handleStopRecordingResult(resultCode, resultData);
+                    mHandlingEvent = false;
+                }
+            };
+            CameraService.startToStopRecording(this, receiver);
+        }
+    }
 
+    private void setRecording(boolean recording) {
+        if (recording) {
+            mRecording = true;
+        } else {
+            mRecording = false;
+        }
+    }
+
+    private void handleStartRecordingResult(int resultCode, Bundle resultData) {
+        if (resultCode == CameraService.RECORD_RESULT_OK) {
+            Toast.makeText(this, "Start recording...", Toast.LENGTH_SHORT).show();
+        } else {
+            // start recording failed.
+            Toast.makeText(this, "Start recording failed", Toast.LENGTH_SHORT).show();
+            setRecording(false);
+        }
+    }
+
+    private void handleStopRecordingResult(int resultCode, Bundle resultData) {
+        if (resultCode == CameraService.RECORD_RESULT_OK) {
+            Toast.makeText(this, "Camera service stopped successfully",
+                    Toast.LENGTH_LONG).show();
+        } else if (resultCode == CameraService.RECORD_RESULT_UNSTOPPABLE) {
+            Toast.makeText(this, "Stop recording failed", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Recording failed", Toast.LENGTH_SHORT).show();
+            setRecording(true);
+        }
+    }
 }
