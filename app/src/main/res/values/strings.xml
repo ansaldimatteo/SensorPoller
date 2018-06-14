@@ -17,5 +17,8 @@
     <string name="start">Start</string>
     <string name="stop">Stop</string>
 
+    <string name="drawTitle">Permission required</string>
+    <string name="drawBody">Please give SensorPoller the permission to display over other apps</string>
+
     <string name="noPermissions">Missing permissions to run</string>
 </resources>

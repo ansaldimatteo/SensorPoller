@@ -2,6 +2,7 @@ package com.ansaldi.sensorpoller;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.Sensor;
@@ -10,10 +11,14 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaScannerConnection;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.ResultReceiver;
+import android.provider.Settings;
+import android.support.annotation.RequiresApi;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -50,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_PERMISSIONS = 20;
     private static final int REQUEST_GPS = 30;
     private static final int REQUEST_NETWORK_FOR_WIFI = 40;
+    private static final int PERMISSION_DRAW_OVER_APPS = 50;
 
     private Switch switch_accelerometer;
     private Switch switch_gyro;
@@ -100,12 +106,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private PowerManager.WakeLock wakeLock;
 
+    private Context context;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        context = this;
 
         switch_accelerometer = findViewById(R.id.switch_accelerometer);
         switch_gyro = findViewById(R.id.switch_gyro);
@@ -207,8 +216,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (view.getId()) {
             case R.id.btn_start:
                 if(!running) {
+
                     new AskPermission.Builder(this)
-                            .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA)
+                            .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.RECORD_AUDIO,
+                                    Manifest.permission.CAMERA)
                             .setCallback(this)
                             .setErrorCallback(this)
                             .request(REQUEST_PERMISSIONS);
@@ -344,7 +357,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void startCamera(){
         if(check_camera){
-            startRecording();
+            // Check if Android M or higher
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if(!Settings.canDrawOverlays(this)) {
+                    // Show alert dialog to the user saying a separate permission is needed
+                    drawPermissionAlert();
+                }else{
+
+                    startRecording();
+                }
+            }else{
+                startRecording();
+            }
+
+
         }
     }
 
@@ -463,6 +489,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 break;
 
+            case PERMISSION_DRAW_OVER_APPS:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if(Settings.canDrawOverlays(context)){
+                        startRecording();
+                    }
+                }
+
         }
     }
 
@@ -528,4 +561,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             setRecording(true);
         }
     }
+
+    private void drawPermissionAlert(){
+        AlertDialog.Builder builder;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
+        } else {
+            builder = new AlertDialog.Builder(this);
+        }
+        builder.setTitle(getString(R.string.drawTitle))
+                .setMessage(getString(R.string.drawBody))
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Launch the settings activity if the user prefers
+                        Intent myIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+                        startActivityForResult(myIntent, PERMISSION_DRAW_OVER_APPS);
+
+                    }
+                })
+                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // do nothing
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
 }

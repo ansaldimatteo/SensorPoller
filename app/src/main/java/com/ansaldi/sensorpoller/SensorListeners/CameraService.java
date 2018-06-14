@@ -4,6 +4,7 @@ package com.ansaldi.sensorpoller.SensorListeners;
  * Created by Matteo on 08/06/2018.
  */
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -14,9 +15,11 @@ import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ResultReceiver;
+import android.provider.Settings;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.SurfaceHolder;
@@ -146,6 +149,7 @@ public class CameraService extends Service {
 
             if(continueTakingPhotos){
                 timestamp = System.currentTimeMillis();
+                mCamera.startPreview();
                 mCamera.takePicture(null, null, mPicture);
             }
         }
@@ -195,6 +199,7 @@ public class CameraService extends Service {
         return START_NOT_STICKY;
     }
 
+    @SuppressLint("NewApi")
     private void handleStartRecordingCommand(Intent intent) {
 
         context = this;
@@ -218,9 +223,18 @@ public class CameraService extends Service {
         if (mCamera != null) {
             SurfaceView sv = new SurfaceView(this);
 
+            Settings.canDrawOverlays(this);
+
+            int LAYOUT_FLAG;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+            } else {
+                LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_PHONE;
+            }
+
             WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
             WindowManager.LayoutParams params = new WindowManager.LayoutParams(1, 1,
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    LAYOUT_FLAG,
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                     PixelFormat.TRANSLUCENT);
 
