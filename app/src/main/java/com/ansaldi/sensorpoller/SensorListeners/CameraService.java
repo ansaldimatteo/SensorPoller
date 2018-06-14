@@ -58,7 +58,9 @@ public class CameraService extends Service {
     private static final String SELECTED_CAMERA_FOR_RECORDING = "cameraForRecording";
 
     private Camera mCamera;
-    private MediaRecorder mMediaRecorder;
+    private WindowManager wm;
+    private SurfaceView sv;
+
 
     private Context context;
 
@@ -221,9 +223,7 @@ public class CameraService extends Service {
                 Camera.CameraInfo.CAMERA_FACING_BACK);
         mCamera = Util.getCameraInstance(cameraId);
         if (mCamera != null) {
-            SurfaceView sv = new SurfaceView(this);
-
-            Settings.canDrawOverlays(this);
+            sv = new SurfaceView(this);
 
             int LAYOUT_FLAG;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -232,7 +232,7 @@ public class CameraService extends Service {
                 LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_PHONE;
             }
 
-            WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+            wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
             WindowManager.LayoutParams params = new WindowManager.LayoutParams(1, 1,
                     LAYOUT_FLAG,
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
@@ -301,6 +301,7 @@ public class CameraService extends Service {
         ResultReceiver resultReceiver = intent.getParcelableExtra(RESULT_RECEIVER);
         continueTakingPhotos = false;
         mCamera.release();
+        wm.removeViewImmediate(sv);
 
         //make Camera.csv visible via MTP
         String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
