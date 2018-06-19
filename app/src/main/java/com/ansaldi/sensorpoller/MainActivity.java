@@ -34,6 +34,7 @@ import com.ansaldi.sensorpoller.SensorListeners.GyroListener;
 import com.ansaldi.sensorpoller.SensorListeners.LightListener;
 import com.ansaldi.sensorpoller.SensorListeners.MicrophoneListener;
 import com.ansaldi.sensorpoller.SensorListeners.ProximityListener;
+import com.ansaldi.sensorpoller.SensorListeners.UncalibratedAccelerometerListener;
 import com.ansaldi.sensorpoller.SensorListeners.WifiListener;
 import com.kishan.askpermission.AskPermission;
 import com.kishan.askpermission.ErrorCallback;
@@ -84,6 +85,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private SensorManager accelerometerSensorManager;
     private Sensor accelerometerSensor;
 
+    private SensorManager uncalibratedAccelerometerSensorManager;
+    private Sensor uncalibratedAccelerometerSensor;
+
     private SensorManager gyroSensorManager;
     private Sensor gyroSensor;
 
@@ -98,6 +102,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private WifiManager mWifiManager;
 
     private AccelerometerListener accelerometerListener;
+    private UncalibratedAccelerometerListener uncalibratedAccelerometerListener;
     private GyroListener gyroListener;
     private LightListener lightListener;
     private ProximityListener proximityListener;
@@ -131,6 +136,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         accelerometerListener = new AccelerometerListener();
+        uncalibratedAccelerometerListener = new UncalibratedAccelerometerListener();
         gyroListener = new GyroListener();
         lightListener = new LightListener();
         proximityListener = new ProximityListener();
@@ -250,6 +256,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         File f = new File(filePath );
         MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
 
+        fileName = "UncalibratedAccelerometer.csv";
+        filePath = baseDir + File.separator + fileName;
+        f = new File(filePath );
+        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+
         fileName = "Gyroscope.csv";
         filePath = baseDir + File.separator + fileName;
         f = new File(filePath );
@@ -307,9 +318,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void startAccelerometer() {
         if (check_accelerometer) {
+            //start linear accelerometer
             accelerometerSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             accelerometerSensor = accelerometerSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
             accelerometerSensorManager.registerListener(accelerometerListener, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
+
+            //start uncalibrated accelerometer
+            uncalibratedAccelerometerSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+            uncalibratedAccelerometerSensor = uncalibratedAccelerometerSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            uncalibratedAccelerometerSensorManager.registerListener(
+                    uncalibratedAccelerometerListener,
+                    uncalibratedAccelerometerSensor,
+                    SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
 
@@ -431,6 +451,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void unregisterListeners(){
         if(accelerometerSensorManager != null) {
             accelerometerSensorManager.unregisterListener(accelerometerListener);
+        }
+        if(uncalibratedAccelerometerSensorManager != null){
+            uncalibratedAccelerometerSensorManager.unregisterListener(uncalibratedAccelerometerListener);
         }
         if(gyroSensorManager != null){
             gyroSensorManager.unregisterListener(gyroListener);
