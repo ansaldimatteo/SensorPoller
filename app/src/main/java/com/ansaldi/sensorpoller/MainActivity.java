@@ -63,22 +63,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Switch switch_light;
     private Switch switch_proximity;
     private Switch switch_microphone;
-    private Switch switch_gps;
-    private Switch switch_wifi;
+    //private Switch switch_gps;
+    //private Switch switch_wifi;
     private Switch switch_camera;
     private TextView txt_status;
     private Button btn_start;
     private Button btn_stop;
 
     private Boolean running = false;
-    private Boolean check_accelerometer = false;
-    private Boolean check_gyro = false;
-    private Boolean check_light = false;
-    private Boolean check_proximity = false;
-    private Boolean check_microphone = false;
+    private Boolean check_accelerometer = true;
+    private Boolean check_gyro = true;
+    private Boolean check_light = true;
+    private Boolean check_proximity = true;
+    private Boolean check_microphone = true;
     private Boolean check_gps = false;
     private Boolean check_wifi = false;
-    private Boolean check_camera = false;
+    private Boolean check_camera = true;
     private boolean mHandlingEvent = false;
     private boolean mRecording;
 
@@ -126,8 +126,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch_light = findViewById(R.id.switch_light);
         switch_proximity = findViewById(R.id.switch_proximity);
         switch_microphone = findViewById(R.id.switch_microphone);
-        switch_gps = findViewById(R.id.switch_gps);
-        switch_wifi = findViewById(R.id.switch_wifi);
+        //switch_gps = findViewById(R.id.switch_gps);
+        //switch_wifi = findViewById(R.id.switch_wifi);
         switch_camera = findViewById(R.id.switch_camera);
 
         txt_status = findViewById(R.id.txt_status);
@@ -180,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-        switch_gps.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        /*switch_gps.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 check_gps = b;
@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 check_wifi = b;
             }
-        });
+        });*/
 
         switch_camera.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -225,7 +225,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     new AskPermission.Builder(this)
                             .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
                                     Manifest.permission.RECORD_AUDIO,
                                     Manifest.permission.CAMERA)
                             .setCallback(this)
@@ -306,8 +305,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startLight();
         startProximity();
         startMicrophone();
-        startGPS();
-        startWifi();
+        /*startGPS();
+        startWifi();*/
         startCamera();
     }
 
@@ -494,7 +493,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode){
-            case REQUEST_GPS:
+            /*case REQUEST_GPS:
                 if(locationManager.isProviderEnabled(locationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(locationManager.NETWORK_PROVIDER)){
                     recordGPS();
                 }else{
@@ -510,7 +509,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Toast.makeText(this, "Network location not on. Will not record WiFi data.", Toast.LENGTH_SHORT);
                     switch_wifi.setChecked(false);
                 }
-                break;
+                break;*/
 
             case PERMISSION_DRAW_OVER_APPS:
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

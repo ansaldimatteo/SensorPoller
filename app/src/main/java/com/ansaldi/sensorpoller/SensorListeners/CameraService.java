@@ -15,6 +15,7 @@ import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -150,9 +151,10 @@ public class CameraService extends Service {
             detector.release();
 
             if(continueTakingPhotos){
-                timestamp = System.currentTimeMillis();
+                /*timestamp = System.currentTimeMillis();
                 mCamera.startPreview();
-                mCamera.takePicture(null, null, mPicture);
+                mCamera.takePicture(null, null, mPicture);*/
+                new newPhoto().execute();
             }
         }
     };
@@ -321,6 +323,26 @@ public class CameraService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    private class newPhoto extends AsyncTask<Void, Void, Void>{
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            if(continueTakingPhotos){
+                timestamp = System.currentTimeMillis();
+                mCamera.startPreview();
+                mCamera.takePicture(null, null, mPicture);
+            }
+
+            return null;
+        }
     }
 
 }
