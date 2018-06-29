@@ -15,6 +15,7 @@ import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
 import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -317,7 +318,23 @@ public class CameraService extends Service {
         String fileName = "Camera.csv";
         String filePath = baseDir + File.separator + fileName;
         File f = new File(filePath );
-        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+        //MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+
+        Intent mediaScannerIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        Uri fileContentUri = Uri.fromFile(f);
+        mediaScannerIntent.setData(fileContentUri);
+        this.sendBroadcast(mediaScannerIntent);
+
+        //make microphone_8k16bitMono.csv visible via MTP
+        fileName = "microphone_8k16bitMono.csv";
+        filePath = baseDir + File.separator + fileName;
+        f = new File(filePath );
+
+        mediaScannerIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        fileContentUri = Uri.fromFile(f);
+        mediaScannerIntent.setData(fileContentUri);
+        this.sendBroadcast(mediaScannerIntent);
+
 
 
         Bundle b = new Bundle();
@@ -325,6 +342,7 @@ public class CameraService extends Service {
         resultReceiver.send(RECORD_RESULT_OK, b);
 
         Log.d(TAG, "recording is finished.");
+        this.stopSelf();
     }
 
     @Override

@@ -275,10 +275,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         f = new File(filePath );
         MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
 
-        fileName = "microphone_8k16bitMono.csv";
+        /*fileName = "microphone_8k16bitMono.csv";
         filePath = baseDir + File.separator + fileName;
         f = new File(filePath );
-        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);
+        MediaScannerConnection.scanFile(this, new String[] {f.toString()}, null, null);*/
 
         fileName = "GPS.csv";
         filePath = baseDir + File.separator + fileName;
