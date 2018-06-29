@@ -8,12 +8,13 @@
 
     <Switch
         android:id="@+id/switch_accelerometer"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:checked="true"
         android:text="@string/accelerometer"
+        app:layout_constraintEnd_toEndOf="@+id/switch_camera"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -86,27 +87,14 @@
         app:layout_constraintTop_toBottomOf="@+id/switch_light" />
 
     <Switch
-        android:id="@+id/switch_microphone"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:checked="true"
-        android:text="@string/microphone"
-        app:layout_constraintEnd_toEndOf="@+id/switch_accelerometer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/switch_proximity" />
-
-    <Switch
         android:id="@+id/switch_camera"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:checked="true"
         android:text="@string/camera"
-        app:layout_constraintEnd_toEndOf="@+id/switch_microphone"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/switch_microphone" />
+        app:layout_constraintTop_toBottomOf="@+id/switch_proximity" />
 
 </android.support.constraint.ConstraintLayout>

@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Switch switch_gyro;
     private Switch switch_light;
     private Switch switch_proximity;
-    private Switch switch_microphone;
+    //private Switch switch_microphone;
     //private Switch switch_gps;
     //private Switch switch_wifi;
     private Switch switch_camera;
@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch_gyro = findViewById(R.id.switch_gyro);
         switch_light = findViewById(R.id.switch_light);
         switch_proximity = findViewById(R.id.switch_proximity);
-        switch_microphone = findViewById(R.id.switch_microphone);
+        //switch_microphone = findViewById(R.id.switch_microphone);
         //switch_gps = findViewById(R.id.switch_gps);
         //switch_wifi = findViewById(R.id.switch_wifi);
         switch_camera = findViewById(R.id.switch_camera);
@@ -173,14 +173,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-        switch_microphone.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        /*switch_microphone.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 check_microphone = b;
             }
         });
 
-        /*switch_gps.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        switch_gps.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 check_gps = b;
@@ -304,7 +304,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startGyro();
         startLight();
         startProximity();
-        startMicrophone();
+        //startMicrophone();
         /*startGPS();
         startWifi();*/
         startCamera();
@@ -464,7 +464,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             proximitySensorManager.unregisterListener(proximityListener);
         }
 
-        microphoneListener.stopRecording();
+        //microphoneListener.stopRecording();
 
         if(locationManager != null) {
             SmartLocation.with(this).location().stop();

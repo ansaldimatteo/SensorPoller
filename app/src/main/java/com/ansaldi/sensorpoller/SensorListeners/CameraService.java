@@ -62,6 +62,8 @@ public class CameraService extends Service {
     private WindowManager wm;
     private SurfaceView sv;
 
+    private MicrophoneListener microphoneListener;
+
 
     private Context context;
 
@@ -208,6 +210,8 @@ public class CameraService extends Service {
 
         context = this;
 
+        microphoneListener = new MicrophoneListener();
+
         if (!Util.isCameraExist(this)) {
             throw new IllegalStateException("There is no device, not possible to start recording");
         }
@@ -272,6 +276,12 @@ public class CameraService extends Service {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+
+                    //START RECORDING MICROPHONE
+                    startMicrophone();
+                    //START ASYNCTASK TO STOP MICROPHONE
+                    new stopRecording2Seconds().execute();
+                    //TAKE PHOTO
                     mCamera.startPreview();
 
                     timestamp = System.currentTimeMillis();
@@ -325,6 +335,11 @@ public class CameraService extends Service {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    private void startMicrophone() {
+        microphoneListener.startRecording();
+
+    }
+
     private class newPhoto extends AsyncTask<Void, Void, Void>{
 
         @Override
@@ -336,10 +351,32 @@ public class CameraService extends Service {
             }
 
             if(continueTakingPhotos){
+                //START RECORDING MICROPHONE
+                startMicrophone();
+                //START ASYNCTASK TO STOP MICROPHONE
+                new stopRecording2Seconds().execute();
+                //TAKE PHOTO
                 timestamp = System.currentTimeMillis();
                 mCamera.startPreview();
                 mCamera.takePicture(null, null, mPicture);
             }
+
+            return null;
+        }
+    }
+
+    private class stopRecording2Seconds extends AsyncTask<Void, Void, Void>{
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            //STOP RECORDING
+            microphoneListener.stopRecording();
 
             return null;
         }
