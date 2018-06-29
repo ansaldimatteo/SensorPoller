@@ -64,14 +64,13 @@ public class CameraService extends Service {
 
     private MicrophoneListener microphoneListener;
 
-
+    private Long timestamp;
     private Context context;
 
     private boolean continueTakingPhotos = true;
     private boolean mRecording = false;
     private String mRecordingPath = null;
 
-    private long timestamp;
 
     public CameraService() {
     }
@@ -104,6 +103,8 @@ public class CameraService extends Service {
             if (pictureFile == null) {
                 return;
             }
+
+            timestamp = System.currentTimeMillis();
 
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inDither = false;
@@ -153,9 +154,6 @@ public class CameraService extends Service {
             detector.release();
 
             if(continueTakingPhotos){
-                /*timestamp = System.currentTimeMillis();
-                mCamera.startPreview();
-                mCamera.takePicture(null, null, mPicture);*/
                 new newPhoto().execute();
             }
         }
@@ -176,7 +174,7 @@ public class CameraService extends Service {
                 writer = new CSVWriter(new FileWriter(filePath));
             }
 
-            String[] data = {String.valueOf(timestamp), String.valueOf(numFaces)};
+            String[] data = {timestamp.toString(), String.valueOf(numFaces)};
 
             writer.writeNext(data);
 
@@ -284,7 +282,6 @@ public class CameraService extends Service {
                     //TAKE PHOTO
                     mCamera.startPreview();
 
-                    timestamp = System.currentTimeMillis();
                     mCamera.takePicture(null, null, mPicture);
 
                     resultReceiver.send(RECORD_RESULT_OK, null);
@@ -356,7 +353,6 @@ public class CameraService extends Service {
                 //START ASYNCTASK TO STOP MICROPHONE
                 new stopRecording2Seconds().execute();
                 //TAKE PHOTO
-                timestamp = System.currentTimeMillis();
                 mCamera.startPreview();
                 mCamera.takePicture(null, null, mPicture);
             }
