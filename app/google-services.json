@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "626481378406",
+    "firebase_url": "https://sensorpoller.firebaseio.com",
+    "project_id": "sensorpoller",
+    "storage_bucket": "sensorpoller.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:626481378406:android:0c7ca051153abc46",
+        "android_client_info": {
+          "package_name": "com.ansaldi.sensorpoller"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "626481378406-6dbjfpcc685mt6l4goh0t39r15vbblib.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ansaldi.sensorpoller",
+            "certificate_hash": "a0e34e724624684c8934b2c66d76d6522bbcfab7"
+          }
+        },
+        {
+          "client_id": "626481378406-9c8efhktp24ubjss16miqtkn1e2t2gi7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBROstZ5RXB3n2w7LCfGFm4NutjlZKriIQ"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "626481378406-9c8efhktp24ubjss16miqtkn1e2t2gi7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

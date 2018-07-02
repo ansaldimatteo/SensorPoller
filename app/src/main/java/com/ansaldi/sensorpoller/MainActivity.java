@@ -1,6 +1,7 @@
 package com.ansaldi.sensorpoller;
 
 import android.Manifest;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -10,6 +11,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,12 +19,14 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.os.ResultReceiver;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,6 +40,11 @@ import com.ansaldi.sensorpoller.SensorListeners.MicrophoneListener;
 import com.ansaldi.sensorpoller.SensorListeners.ProximityListener;
 import com.ansaldi.sensorpoller.SensorListeners.UncalibratedAccelerometerListener;
 import com.ansaldi.sensorpoller.SensorListeners.WifiListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.kishan.askpermission.AskPermission;
 import com.kishan.askpermission.ErrorCallback;
 import com.kishan.askpermission.PermissionCallback;
@@ -44,6 +53,7 @@ import com.kishan.askpermission.PermissionInterface;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.UUID;
 
 import au.com.bytecode.opencsv.CSVWriter;
 import io.nlopez.smartlocation.OnLocationUpdatedListener;
@@ -69,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView txt_status;
     private Button btn_start;
     private Button btn_stop;
+    private Button btn_upload;
 
     private Boolean running = false;
     private Boolean check_accelerometer = true;
@@ -133,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         txt_status = findViewById(R.id.txt_status);
         btn_start = findViewById(R.id.btn_start);
         btn_stop = findViewById(R.id.btn_stop);
+        btn_upload = findViewById(R.id.btn_upload);
 
 
         accelerometerListener = new AccelerometerListener();
@@ -203,6 +215,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         btn_start.setOnClickListener(this);
         btn_stop.setOnClickListener(this);
+        btn_upload.setOnClickListener(this);
     }
 
 
@@ -244,8 +257,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 unregisterListeners();
                 makeFilesVisible();
                 break;
+
+            case R.id.btn_upload:
+                //stop recording before uploading
+                running = false;
+                if(wakeLock != null) {
+                    if (wakeLock.isHeld()) {
+                        wakeLock.release();
+                    }
+                }
+                txt_status.setText(getString(R.string.paused));
+                unregisterListeners();
+                makeFilesVisible();
+
+                uploadDialog();
+                break;
         }
     }
+
 
     //This allows MTP to show the file when the phone is connected to a pc
     private void makeFilesVisible() {
@@ -609,6 +638,123 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 })
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
+    }
+
+    private void uploadDialog() {
+
+        String baseDir = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
+        String fileName = "LinearAccelerometer.csv";
+        String filePath = baseDir + File.separator + fileName;
+        final File linearAccelerometer = new File(filePath );
+
+        fileName = "UncalibratedAccelerometer.csv";
+        filePath = baseDir + File.separator + fileName;
+        final File uncalibratedAccelerometer = new File(filePath );
+
+        fileName = "Gyroscope.csv";
+        filePath = baseDir + File.separator + fileName;
+        final File gyroscope = new File(filePath );
+
+        fileName = "Light.csv";
+        filePath = baseDir + File.separator + fileName;
+        final File light = new File(filePath );
+
+        fileName = "Proximity.csv";
+        filePath = baseDir + File.separator + fileName;
+        final File proximity = new File(filePath );
+
+        fileName = "microphone_8k16bitMono.csv";
+        filePath = baseDir + File.separator + fileName;
+        final File microphone = new File(filePath );
+
+        fileName = "Camera.csv";
+        filePath = baseDir + File.separator + fileName;
+        final File camera = new File(filePath );
+
+        Double filesize = 0.0;
+        filesize += linearAccelerometer.length();
+        filesize += uncalibratedAccelerometer.length();
+        filesize += gyroscope.length();
+        filesize += light.length();
+        filesize += proximity.length();
+        filesize += microphone.length();
+        filesize += camera.length();
+
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                context);
+
+        // set title
+        alertDialogBuilder.setTitle(getString(R.string.uploadConfirmation));
+
+        // set dialog message
+        alertDialogBuilder
+                .setMessage(getString(R.string.filesize) + " " + String.format( "%.2f", filesize/(1024*1024) ) + "MB")
+                .setCancelable(false)
+                .setPositiveButton(getString(R.string.yes),new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog,int id) {
+                        //upload the files one by one
+                        if(linearAccelerometer.length() > 0) {
+                            uploadFile(linearAccelerometer, "LinearAccelerometer");
+                        }
+                        if(linearAccelerometer.length() > 0) {
+                            uploadFile(uncalibratedAccelerometer, "UncalibratedAccelerometer");
+                        }
+                        if(gyroscope.length() > 0) {
+                            uploadFile(gyroscope, "Gyroscope");
+                        }
+                        if(light.length() > 0) {
+                            uploadFile(light, "Light");
+                        }
+                        if(proximity.length() > 0) {
+                            uploadFile(proximity, "Proximity");
+                        }
+                        if(microphone.length() > 0) {
+                            uploadFile(microphone, "Microphone");
+                        }
+                        if(camera.length() > 0) {
+                            uploadFile(camera, "Camera");
+                        }
+
+                    }
+                })
+                .setNegativeButton(getString(R.string.no),new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog,int id) {
+                        dialog.cancel();
+                    }
+                });
+
+        // create alert dialog
+        AlertDialog alertDialog = alertDialogBuilder.create();
+
+        // show it
+        alertDialog.show();
+    }
+
+
+    private void uploadFile(File f, final String folder){
+        StorageReference mStorageRef;
+        mStorageRef = FirebaseStorage.getInstance().getReference();
+
+        Uri file = Uri.fromFile(f);
+        StorageReference folderRef = mStorageRef.child(folder + "/" + UUID.randomUUID() + ".csv");
+
+        folderRef.putFile(file)
+                .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                        // Get a URL to the uploaded content
+                        Uri downloadUrl = taskSnapshot.getDownloadUrl();
+                        System.out.println(folder + " uploaded");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        // Handle unsuccessful uploads
+                        // ...
+                        System.out.println(folder + " failed");
+                    }
+                });
     }
 
 }

@@ -2,6 +2,8 @@
     <string name="app_name">SensorPoller</string>
     <string name="ok">Ok</string>
     <string name="cancel">Cancel</string>
+    <string name="yes">YES</string>
+    <string name="no">NO</string>
 
     <string name="accelerometer">Accelerometer</string>
     <string name="gyroscope">Gyroscope</string>
@@ -16,6 +18,11 @@
     <string name="paused">Paused</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
+    <string name="upload">Upload</string>
+
+    <string name="filesToUpload">Please select the files to upload</string>
+    <string name="uploadConfirmation">Are you sure you want to upload the files?</string>
+    <string name="filesize">Filesize: </string>
 
     <string name="drawTitle">Permission required</string>
     <string name="drawBody">Please give SensorPoller the permission to display over other apps</string>
