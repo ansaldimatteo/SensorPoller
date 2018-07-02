@@ -731,7 +731,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    private void uploadFile(File f, final String folder){
+    private void uploadFile(final File f, final String folder){
         StorageReference mStorageRef;
         mStorageRef = FirebaseStorage.getInstance().getReference();
 
@@ -745,6 +745,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         // Get a URL to the uploaded content
                         Uri downloadUrl = taskSnapshot.getDownloadUrl();
                         System.out.println(folder + " uploaded");
+                        f.delete();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
