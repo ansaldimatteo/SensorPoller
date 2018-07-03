@@ -23,6 +23,7 @@
     <string name="filesToUpload">Please select the files to upload</string>
     <string name="uploadConfirmation">Are you sure you want to upload the files?</string>
     <string name="filesize">Filesize: </string>
+    <string name="uploadCompleted">Upload completed</string>
 
     <string name="drawTitle">Permission required</string>
     <string name="drawBody">Please give SensorPoller the permission to display over other apps</string>

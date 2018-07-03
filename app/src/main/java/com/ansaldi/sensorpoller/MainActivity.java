@@ -1,7 +1,7 @@
 package com.ansaldi.sensorpoller;
 
 import android.Manifest;
-import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -26,7 +26,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
-import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -692,11 +691,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setCancelable(false)
                 .setPositiveButton(getString(R.string.yes),new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog,int id) {
+
                         //upload the files one by one
                         if(linearAccelerometer.length() > 0) {
                             uploadFile(linearAccelerometer, "LinearAccelerometer");
                         }
-                        if(linearAccelerometer.length() > 0) {
+                        if(uncalibratedAccelerometer.length() > 0) {
                             uploadFile(uncalibratedAccelerometer, "UncalibratedAccelerometer");
                         }
                         if(gyroscope.length() > 0) {
@@ -714,6 +714,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         if(camera.length() > 0) {
                             uploadFile(camera, "Camera");
                         }
+
 
                     }
                 })
