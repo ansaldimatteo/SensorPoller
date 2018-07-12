@@ -28,6 +28,7 @@
             </intent-filter>
         </activity>
         <service android:name=".SensorListeners.CameraService" android:enabled="true" />
+        <service android:name=".SensorListeners.GlobalTouchService" />
     </application>
 
 </manifest>

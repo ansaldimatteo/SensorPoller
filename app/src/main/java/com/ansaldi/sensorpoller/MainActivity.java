@@ -33,6 +33,7 @@ import android.widget.Toast;
 import com.ansaldi.sensorpoller.SensorListeners.AccelerometerListener;
 import com.ansaldi.sensorpoller.SensorListeners.CameraService;
 import com.ansaldi.sensorpoller.SensorListeners.ContinuousReceiver;
+import com.ansaldi.sensorpoller.SensorListeners.GlobalTouchService;
 import com.ansaldi.sensorpoller.SensorListeners.GyroListener;
 import com.ansaldi.sensorpoller.SensorListeners.LightListener;
 import com.ansaldi.sensorpoller.SensorListeners.MicrophoneListener;
@@ -75,6 +76,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //private Switch switch_gps;
     //private Switch switch_wifi;
     private Switch switch_camera;
+    private Switch switch_touch;
     private TextView txt_status;
     private Button btn_start;
     private Button btn_stop;
@@ -89,8 +91,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Boolean check_gps = false;
     private Boolean check_wifi = false;
     private Boolean check_camera = true;
+    private Boolean check_touch = true;
     private boolean mHandlingEvent = false;
     private boolean mRecording;
+    private Boolean touchRunning = false;
 
     private SensorManager accelerometerSensorManager;
     private Sensor accelerometerSensor;
@@ -110,6 +114,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private LocationManager locationManager;
 
     private WifiManager mWifiManager;
+
+    private Intent globalService;
 
     private AccelerometerListener accelerometerListener;
     private UncalibratedAccelerometerListener uncalibratedAccelerometerListener;
@@ -139,6 +145,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //switch_gps = findViewById(R.id.switch_gps);
         //switch_wifi = findViewById(R.id.switch_wifi);
         switch_camera = findViewById(R.id.switch_camera);
+        switch_touch = findViewById(R.id.switch_touch);
 
         txt_status = findViewById(R.id.txt_status);
         btn_start = findViewById(R.id.btn_start);
@@ -209,6 +216,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 check_camera = b;
+            }
+        });
+
+        switch_touch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                check_touch = b;
             }
         });
 
@@ -336,6 +350,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         /*startGPS();
         startWifi();*/
         startCamera();
+        startTouch();
     }
 
     @Override
@@ -474,6 +489,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mWifiScanReceiver.startScanning(true);
     }
 
+    private void startTouch(){
+        if(check_touch){
+            globalService = new Intent(this,GlobalTouchService.class);
+            startService(globalService);
+            touchRunning = true;
+            Toast.makeText(this, "Touch service started...", Toast.LENGTH_SHORT).show();
+        }
+    }
+
 
     private void unregisterListeners(){
         if(accelerometerSensorManager != null) {
@@ -504,6 +528,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if(mRecording) {
             stopRecording();
+        }
+
+        if(touchRunning){
+            stopService(globalService);
+            Toast.makeText(this, "Touch service stopped", Toast.LENGTH_SHORT).show();
         }
 
     }
@@ -603,7 +632,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void handleStopRecordingResult(int resultCode, Bundle resultData) {
         if (resultCode == CameraService.RECORD_RESULT_OK) {
             Toast.makeText(this, "Camera service stopped successfully",
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_SHORT).show();
         } else if (resultCode == CameraService.RECORD_RESULT_UNSTOPPABLE) {
             Toast.makeText(this, "Stop recording failed", Toast.LENGTH_SHORT).show();
         } else {
@@ -670,6 +699,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         filePath = baseDir + File.separator + fileName;
         final File camera = new File(filePath );
 
+        fileName = "Touch.csv";
+        filePath = baseDir + File.separator + fileName;
+        final File touch = new File(filePath );
+
+
         Double filesize = 0.0;
         filesize += linearAccelerometer.length();
         filesize += uncalibratedAccelerometer.length();
@@ -678,6 +712,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         filesize += proximity.length();
         filesize += microphone.length();
         filesize += camera.length();
+        filesize += touch.length();
 
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
                 context);
@@ -713,6 +748,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         }
                         if(camera.length() > 0) {
                             uploadFile(camera, "Camera");
+                        }
+                        if(touch.length() > 0){
+                            uploadFile(touch, "Touch");
                         }
 
 
