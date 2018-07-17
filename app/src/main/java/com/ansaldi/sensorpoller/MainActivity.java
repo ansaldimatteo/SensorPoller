@@ -349,8 +349,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //startMicrophone();
         /*startGPS();
         startWifi();*/
-        startCamera();
-        startTouch();
+        startCameraAndTouch();
+    }
+
+    private void startCameraAndTouch() {
+        if(check_camera || check_touch){
+            // Check if Android M or higher
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if(!Settings.canDrawOverlays(this)) {
+                    // Show alert dialog to the user saying a separate permission is needed
+                    drawPermissionAlert();
+                }else{
+                    if(check_camera) {
+                        startRecording();
+                    }
+                    startTouch();
+                }
+            }else{
+                if(check_camera) {
+                    startRecording();
+                }
+                startTouch();
+            }
+
+
+        }
     }
 
     @Override
@@ -403,6 +426,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (check_microphone) {
             microphoneListener.startRecording();
         }
+
     }
 
     private void startGPS() {
@@ -417,7 +441,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-    private void startCamera(){
+    /*private void startCamera(){
         if(check_camera){
             // Check if Android M or higher
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -434,7 +458,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         }
-    }
+    }*/
 
     private void recordGPS() {
         SmartLocation.with(this).location()
@@ -571,7 +595,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case PERMISSION_DRAW_OVER_APPS:
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     if(Settings.canDrawOverlays(context)){
-                        startRecording();
+                        if(check_camera) {
+                            startRecording();
+                        }
+                        startTouch();
                     }
                 }
 
