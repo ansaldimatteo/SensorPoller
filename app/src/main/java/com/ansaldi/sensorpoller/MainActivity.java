@@ -147,6 +147,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch_camera = findViewById(R.id.switch_camera);
         switch_touch = findViewById(R.id.switch_touch);
 
+        switch_accelerometer.setVisibility(View.INVISIBLE);
+        switch_gyro.setVisibility(View.INVISIBLE);
+        switch_light.setVisibility(View.INVISIBLE);
+        switch_proximity.setVisibility(View.INVISIBLE);
+        switch_camera.setVisibility(View.INVISIBLE);
+        switch_touch.setVisibility(View.INVISIBLE);
+
         txt_status = findViewById(R.id.txt_status);
         btn_start = findViewById(R.id.btn_start);
         btn_stop = findViewById(R.id.btn_stop);
