@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SensorPoller</string>
+
+    <string name="yes">SI</string>
+
+    <string name="running">Registrando</string>
+    <string name="paused">In pausa</string>
+
+    <string name="uploadConfirmation">Sei sicuro di voler fare l\'upload dei files?</string>
+    <string name="uploadProgress">Sto facendo l\'upload</string>
+    <string name="uploadCompleted">Upload completato</string>
+
+    <string name="drawTitle">Permessi mancanti</string>
+    <string name="drawBody">Per favore dai a SensorPoller il permesso di visualizzare sopra le app.</string>
+
+    <string name="noPermissions">Mancano dei permessi</string>
+
+    <string name="whatTitle">Cosa fa\' questa app:</string>
+    <string name="whatBody">Quando clicchi su \"Start\", questa app raccoglie dati dal giroscopio, accelerometro, sensore di luce, sensore di prossimita\', microfono, eventi touch
+        sul touchscreen e se una faccia e\' visibile dalla fotocamera anteriore. Puoi fermare la raccolta di dati in qualsiasi momento premendo \"Stop\". Il microfono registra per
+        2 secondi ogni 10 secondi. La fotocamera scatta una foto ogni 10 secondi, controlla per una faccia all\'interno della foto, e salva 1 se e\' presente una faccia, 0 se non
+        e\' presente. Tutte le foto scattate non vengono salvate. Quando decidi di fare l\'upload dei tuoi files, i files sono salvati in modo completamente anonimo su un server online
+        per la raccolta dei dati. Non abbiamo modo di riconoscere a chi appartengono i dati una volta che sono salvati sul server.</string>
+
+</resources>

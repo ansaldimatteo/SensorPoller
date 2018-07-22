@@ -310,7 +310,9 @@ public class CameraService extends Service {
     private void handleStopRecordingCommand(Intent intent) {
         ResultReceiver resultReceiver = intent.getParcelableExtra(RESULT_RECEIVER);
         continueTakingPhotos = false;
-        mCamera.release();
+        if(mCamera != null) {
+            mCamera.release();
+        }
         wm.removeViewImmediate(sv);
 
         //make Camera.csv visible via MTP

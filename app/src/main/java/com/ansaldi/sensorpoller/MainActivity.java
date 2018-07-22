@@ -1,6 +1,8 @@
 package com.ansaldi.sensorpoller;
 
 import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -21,6 +23,8 @@ import android.os.ResultReceiver;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -68,6 +72,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_NETWORK_FOR_WIFI = 40;
     private static final int PERMISSION_DRAW_OVER_APPS = 50;
 
+    private static final String CHANNEL_ID = "SENSORPOLLER";
+    private Integer NOTIFICATION_ID;
+
     private Switch switch_accelerometer;
     private Switch switch_gyro;
     private Switch switch_light;
@@ -78,8 +85,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Switch switch_camera;
     private Switch switch_touch;
     private TextView txt_status;
-    private Button btn_start;
-    private Button btn_stop;
+    private Button btn_startStop;
     private Button btn_upload;
 
     private Boolean running = false;
@@ -128,6 +134,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private PowerManager.WakeLock wakeLock;
 
     private Context context;
+    private int PROGRESS_MAX;
+    private int PROGRESS_CURRENT;
 
 
     @Override
@@ -135,6 +143,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        NOTIFICATION_ID = (int)(Math.random()*10000);
         context = this;
 
         switch_accelerometer = findViewById(R.id.switch_accelerometer);
@@ -155,8 +164,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch_touch.setVisibility(View.INVISIBLE);
 
         txt_status = findViewById(R.id.txt_status);
-        btn_start = findViewById(R.id.btn_start);
-        btn_stop = findViewById(R.id.btn_stop);
+        btn_startStop = findViewById(R.id.btn_startStop);
         btn_upload = findViewById(R.id.btn_upload);
 
 
@@ -233,8 +241,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-        btn_start.setOnClickListener(this);
-        btn_stop.setOnClickListener(this);
+        btn_startStop.setOnClickListener(this);
         btn_upload.setOnClickListener(this);
     }
 
@@ -253,8 +260,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.btn_start:
+            case R.id.btn_startStop:
                 if(!running) {
+
+                    btn_startStop.setText(getString(R.string.stop));
 
                     new AskPermission.Builder(this)
                             .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -263,19 +272,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             .setCallback(this)
                             .setErrorCallback(this)
                             .request(REQUEST_PERMISSIONS);
-                }
-                break;
-
-            case R.id.btn_stop:
-                running = false;
-                if(wakeLock != null) {
-                    if (wakeLock.isHeld()) {
-                        wakeLock.release();
+                }else{
+                    running = false;
+                    if(wakeLock != null) {
+                        if (wakeLock.isHeld()) {
+                            wakeLock.release();
+                        }
                     }
+                    txt_status.setText(getString(R.string.paused));
+                    unregisterListeners();
+                    makeFilesVisible();
+
+                    btn_startStop.setText(getString(R.string.start));
                 }
-                txt_status.setText(getString(R.string.paused));
-                unregisterListeners();
-                makeFilesVisible();
                 break;
 
             case R.id.btn_upload:
@@ -760,31 +769,58 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setCancelable(false)
                 .setPositiveButton(getString(R.string.yes),new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog,int id) {
+                        //create an upload notification
+                        createNotificationChannel();
+
+                        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+                        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, CHANNEL_ID);
+                        mBuilder.setContentTitle(getString(R.string.fileUpload))
+                                .setContentText(getString(R.string.uploadProgress))
+                                .setSmallIcon(R.drawable.ic_baseline_cloud_upload_24px)
+                                .setPriority(NotificationCompat.PRIORITY_LOW);
+
+                        Double filesize = 0.0;
+                        filesize += linearAccelerometer.length();
+                        filesize += uncalibratedAccelerometer.length();
+                        filesize += gyroscope.length();
+                        filesize += light.length();
+                        filesize += proximity.length();
+                        filesize += microphone.length();
+                        filesize += camera.length();
+                        filesize += touch.length();
+
+                        PROGRESS_MAX = filesize.intValue();
+                        PROGRESS_CURRENT = 0;
+                        mBuilder.setProgress(PROGRESS_MAX, PROGRESS_CURRENT, false);
+                        notificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+
 
                         //upload the files one by one
+                        String uuid = UUID.randomUUID().toString();
+
                         if(linearAccelerometer.length() > 0) {
-                            uploadFile(linearAccelerometer, "LinearAccelerometer");
+                            uploadFile(linearAccelerometer, "LinearAccelerometer", uuid, mBuilder, notificationManager);
                         }
                         if(uncalibratedAccelerometer.length() > 0) {
-                            uploadFile(uncalibratedAccelerometer, "UncalibratedAccelerometer");
+                            uploadFile(uncalibratedAccelerometer, "UncalibratedAccelerometer", uuid, mBuilder, notificationManager);
                         }
                         if(gyroscope.length() > 0) {
-                            uploadFile(gyroscope, "Gyroscope");
+                            uploadFile(gyroscope, "Gyroscope", uuid, mBuilder, notificationManager);
                         }
                         if(light.length() > 0) {
-                            uploadFile(light, "Light");
+                            uploadFile(light, "Light", uuid, mBuilder, notificationManager);
                         }
                         if(proximity.length() > 0) {
-                            uploadFile(proximity, "Proximity");
+                            uploadFile(proximity, "Proximity", uuid, mBuilder, notificationManager);
                         }
                         if(microphone.length() > 0) {
-                            uploadFile(microphone, "Microphone");
+                            uploadFile(microphone, "Microphone", uuid, mBuilder, notificationManager);
                         }
                         if(camera.length() > 0) {
-                            uploadFile(camera, "Camera");
+                            uploadFile(camera, "Camera", uuid, mBuilder, notificationManager);
                         }
                         if(touch.length() > 0){
-                            uploadFile(touch, "Touch");
+                            uploadFile(touch, "Touch", uuid, mBuilder, notificationManager);
                         }
 
 
@@ -803,13 +839,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         alertDialog.show();
     }
 
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_description);
+            int importance = NotificationManager.IMPORTANCE_LOW;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
 
-    private void uploadFile(final File f, final String folder){
+    private void updateNotification(NotificationCompat.Builder mBuilder, int PROGRESS_MAX, int PROGRESS_CURRENT, NotificationManagerCompat notificationManager){
+        mBuilder.setProgress(PROGRESS_MAX, PROGRESS_CURRENT, false);
+        notificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+    }
+
+
+
+    private void uploadFile(final File f, final String folder, String uuid, final NotificationCompat.Builder mBuilder, final NotificationManagerCompat notificationManager){
         StorageReference mStorageRef;
         mStorageRef = FirebaseStorage.getInstance().getReference();
 
         Uri file = Uri.fromFile(f);
-        StorageReference folderRef = mStorageRef.child(folder + "/" + UUID.randomUUID() + ".csv");
+        StorageReference folderRef = mStorageRef.child(folder + "/" + uuid + "_"  + folder + ".csv");
 
         folderRef.putFile(file)
                 .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -818,6 +876,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         // Get a URL to the uploaded content
                         Uri downloadUrl = taskSnapshot.getDownloadUrl();
                         System.out.println(folder + " uploaded");
+                        PROGRESS_CURRENT += f.length();
+                        if(PROGRESS_CURRENT < PROGRESS_MAX) {
+                            updateNotification(mBuilder, PROGRESS_MAX, PROGRESS_CURRENT, notificationManager);
+                        }else{
+                            mBuilder
+                                    .setPriority(NotificationManager.IMPORTANCE_HIGH)
+                                    .setContentText(getString(R.string.uploadCompleted))
+                                    .setProgress(0, 0, false);
+                            notificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+                        }
                         f.delete();
                     }
                 })

@@ -24,10 +24,21 @@
     <string name="filesToUpload">Please select the files to upload</string>
     <string name="uploadConfirmation">Are you sure you want to upload the files?</string>
     <string name="filesize">Filesize: </string>
+    <string name="fileUpload">File Upload</string>
+    <string name="uploadProgress">Upload in progress</string>
     <string name="uploadCompleted">Upload completed</string>
 
     <string name="drawTitle">Permission required</string>
     <string name="drawBody">Please give SensorPoller the permission to display over other apps</string>
 
+    <string name="channel_name">Notificaton_channel</string>
+    <string name="channel_description">Upload notification</string>
+
     <string name="noPermissions">Missing permissions to run</string>
+
+    <string name="whatTitle">What this app does:</string>
+    <string name="whatBody">Once you click \"Start\", this app collects data from your phone\'s gyroscope, accelerometer, light sensor, proximity sensor, microphone, touch events on the touchscreen
+        and if your face is visibile from the front camera. You can stop the data collection at any time by pressing \"Stop\". The microphone records sound for 2 seconds every 10 seconds. The camera takes a photo every 10 seconds, scans for
+        a face, and saves a 0 if it doesn\'t see any faces, 1 if it does. No photos are saved. When you decide to upload your data, it is saved anonomously on an online server
+        for data collection. We have no way of recognising who the data belongs to, once it is stored on the online server.</string>
 </resources>
