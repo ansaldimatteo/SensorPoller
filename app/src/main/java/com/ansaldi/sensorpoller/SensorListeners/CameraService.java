@@ -24,8 +24,11 @@ import android.os.ResultReceiver;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
 
 import com.google.android.gms.vision.Frame;
@@ -39,7 +42,7 @@ import java.util.List;
 
 import au.com.bytecode.opencsv.CSVWriter;
 
-public class CameraService extends Service {
+public class CameraService extends Service implements View.OnTouchListener{
     private static final String TAG = CameraService.class.getSimpleName();
 
     public static final String RESULT_RECEIVER = "resultReceiver";
@@ -240,8 +243,12 @@ public class CameraService extends Service {
             wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
             WindowManager.LayoutParams params = new WindowManager.LayoutParams(1, 1,
                     LAYOUT_FLAG,
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                    PixelFormat.TRANSLUCENT);
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                    PixelFormat.TRANSPARENT);
+
+            params.gravity = Gravity.LEFT | Gravity.TOP;
 
             SurfaceHolder sh = sv.getHolder();
 
@@ -355,6 +362,11 @@ public class CameraService extends Service {
     private void startMicrophone() {
         microphoneListener.startRecording();
 
+    }
+
+    @Override
+    public boolean onTouch(View view, MotionEvent motionEvent) {
+        return false;
     }
 
     private class newPhoto extends AsyncTask<Void, Void, Void>{
