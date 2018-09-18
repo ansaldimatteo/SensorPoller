@@ -13,6 +13,7 @@
 
     <string name="drawTitle">Permessi mancanti</string>
     <string name="drawBody">Per favore dai a SensorPoller il permesso di visualizzare sopra le app.</string>
+    <string name="batteryBody">Per favore rimuovere l\'ottimizazzione batteria, in modo che l\'app possa continuare a lavorare in background</string>
 
     <string name="noPermissions">Mancano dei permessi</string>
 

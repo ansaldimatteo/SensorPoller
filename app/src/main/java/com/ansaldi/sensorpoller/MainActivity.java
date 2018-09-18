@@ -376,6 +376,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     // Show alert dialog to the user saying a separate permission is needed
                     drawPermissionAlert();
                 }else{
+                    //TODO: UWQRTUYWR
+                    //request battery optimizations to be removed from the app
+                    String packageName = context.getPackageName();
+                    PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                    if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                        drawBatteryAlert();
+                    }
+
+
                     if(check_camera) {
                         startRecording();
                     }
@@ -617,6 +626,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         startTouch();
                     }
                 }
+                //request battery optimizations to be removed from the app
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    String packageName = context.getPackageName();
+                    PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                    if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                        drawBatteryAlert();
+                    }
+
+                }
 
         }
     }
@@ -696,9 +714,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     @RequiresApi(api = Build.VERSION_CODES.M)
                     public void onClick(DialogInterface dialog, int which) {
-                        // Launch the settings activity if the user prefers
+                        // Launch the settings activity
                         Intent myIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
                         startActivityForResult(myIntent, PERMISSION_DRAW_OVER_APPS);
+
+                    }
+                })
+                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // do nothing
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
+    private void drawBatteryAlert(){
+        AlertDialog.Builder builder;
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
+            builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
+        } else {
+            builder = new AlertDialog.Builder(this);
+        }
+        builder.setTitle(getString(R.string.drawTitle))
+                .setMessage(getString(R.string.batteryBody))
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Launch the settings activity to remove battery optimization
+                        Intent myIntent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                        startActivity(myIntent);
 
                     }
                 })

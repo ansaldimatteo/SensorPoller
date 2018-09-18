@@ -30,6 +30,7 @@
 
     <string name="drawTitle">Permission required</string>
     <string name="drawBody">Please give SensorPoller the permission to display over other apps</string>
+    <string name="batteryBody">Please remove battery optimization from SensorPoller, so it won\'t be blocked while running in the background</string>
 
     <string name="channel_name" translatable="false">Notificaton_channel</string>
     <string name="channel_description" translatable="false">Upload notification</string>
